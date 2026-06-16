@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <!-- Subtle tarmac/carbon grain. Used at very low opacity behind dark sections. -->
+  <filter id="grain">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" seed="7" />
+    <feColorMatrix type="saturate" values="0" />
+    <feComponentTransfer>
+      <feFuncA type="linear" slope="0.5" intercept="0" />
+    </feComponentTransfer>
+  </filter>
+  <rect width="600" height="600" fill="#0B0B0D" />
+  <rect width="600" height="600" filter="url(#grain)" opacity="0.5" />
+</svg>
