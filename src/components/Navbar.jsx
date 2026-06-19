@@ -9,10 +9,14 @@ const APP_URL = 'https://app.grandrivals.com'
  * countdown slides in next to the CTA after the hero, keeping the urgency — and the
  * "Play now" button — in view all the way down the page.
  */
-// Smooth-scroll back to the top via Lenis (falls back to native).
-function scrollToTop(e) {
+// Logo click → home. On the landing page, smooth-scroll to the top instead of
+// reloading; on any other page (e.g. the legal pages), follow the href to "/".
+function goHome(e) {
+  if (typeof window === 'undefined') return
+  const onHome = window.location.pathname.replace(/\/+$/, '') === ''
+  if (!onHome) return
   e.preventDefault()
-  if (typeof window !== 'undefined' && window.lenis) window.lenis.scrollTo(0)
+  if (window.lenis) window.lenis.scrollTo(0)
   else window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -38,8 +42,8 @@ export function Navbar() {
     >
       <div className="mx-auto flex max-w-content items-center justify-between px-3 py-3 md:px-8">
         <a
-          href="#top"
-          onClick={scrollToTop}
+          href="/"
+          onClick={goHome}
           className="shrink-0 rounded-sm"
           aria-label="Grand Rivals — home"
         >

@@ -19,13 +19,26 @@ const SOCIALS = [
 const LEGAL =
   'Grand Rivals is not affiliated with, endorsed by, or associated with Formula 1, Formula One Licensing BV, the FIA, or any Formula 1 team or driver. All driver and team names are used for identification purposes only.'
 
-// Smooth-scroll internal anchors via Lenis (falls back to native).
+const onHomePage = () =>
+  typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === ''
+
+// Logo click → home. Smooth-scroll to top when already on the landing page;
+// otherwise follow the href to "/".
+function goHome(e) {
+  if (!onHomePage()) return
+  e.preventDefault()
+  if (window.lenis) window.lenis.scrollTo(0)
+  else window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Smooth-scroll internal anchors via Lenis when on the landing page; from any
+// other page, let the browser navigate to the homepage anchor (/#section).
 function scrollToHash(e, href) {
-  if (!href.startsWith('#')) return
+  if (!href.startsWith('#') || !onHomePage()) return
   e.preventDefault()
   const el = document.querySelector(href)
   if (!el) return
-  if (typeof window !== 'undefined' && window.lenis) window.lenis.scrollTo(el, { offset: -80 })
+  if (window.lenis) window.lenis.scrollTo(el, { offset: -80 })
   else el.scrollIntoView({ behavior: 'smooth' })
 }
 
@@ -35,16 +48,19 @@ const smallLinkClass =
   'rounded-sm font-body text-[12px] text-secondary transition-colors duration-200 ease-out hover:text-primary'
 
 export function Footer() {
+  // Anchors point at the homepage section when we're not already on it.
+  const hashHref = (href) => (onHomePage() ? href : `/${href}`)
+
   return (
     <footer className="relative z-10 border-t border-border bg-canvas">
       <div className="mx-auto w-full max-w-content px-3 py-12 md:px-8">
-        {/* top: wordmark, nav, socials */}
+        {/* top: logo, nav, socials */}
         <div className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-center md:justify-between">
           <a
-            href="#top"
-            onClick={(e) => scrollToHash(e, '#top')}
+            href="/"
+            onClick={goHome}
             className="shrink-0 rounded-sm"
-            aria-label="Grand Rivals — back to top"
+            aria-label="Grand Rivals — home"
           >
             <img
               src="/logo-horizontal.png"
@@ -64,7 +80,7 @@ export function Footer() {
               ) : (
                 <a
                   key={item.label}
-                  href={item.href}
+                  href={hashHref(item.href)}
                   onClick={(e) => scrollToHash(e, item.href)}
                   className={linkClass}
                 >
@@ -96,12 +112,15 @@ export function Footer() {
             <p className="font-body text-[12px] text-secondary">
               © 2026 Grand Rivals. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
-              <a href="#" className={smallLinkClass}>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <a href="/privacy" className={smallLinkClass}>
                 Privacy Policy
               </a>
-              <a href="#" className={smallLinkClass}>
-                Terms
+              <a href="/terms" className={smallLinkClass}>
+                Terms of Service
+              </a>
+              <a href="/legal" className={smallLinkClass}>
+                Legal Notice
               </a>
             </div>
           </div>
