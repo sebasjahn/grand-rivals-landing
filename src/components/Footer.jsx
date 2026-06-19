@@ -1,5 +1,4 @@
 import { Instagram, Twitter, Music2 } from 'lucide-react'
-import { Wordmark } from './Wordmark'
 
 const APP_URL = 'https://app.grandrivals.com'
 
@@ -44,10 +43,16 @@ export function Footer() {
           <a
             href="#top"
             onClick={(e) => scrollToHash(e, '#top')}
-            className="rounded-sm transition-opacity duration-200 ease-out hover:opacity-80"
+            className="shrink-0 rounded-sm"
             aria-label="Grand Rivals — back to top"
           >
-            <Wordmark />
+            <img
+              src="/logo-horizontal.png"
+              alt="Grand Rivals"
+              width={179}
+              height={36}
+              className="h-[36px] w-auto max-w-none shrink-0"
+            />
           </a>
 
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Footer">

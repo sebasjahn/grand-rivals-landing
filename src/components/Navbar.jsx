@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Wordmark } from './Wordmark'
 import { Countdown } from './Countdown'
 
 const APP_URL = 'https://app.grandrivals.com'
@@ -10,6 +9,13 @@ const APP_URL = 'https://app.grandrivals.com'
  * countdown slides in next to the CTA after the hero, keeping the urgency — and the
  * "Play now" button — in view all the way down the page.
  */
+// Smooth-scroll back to the top via Lenis (falls back to native).
+function scrollToTop(e) {
+  e.preventDefault()
+  if (typeof window !== 'undefined' && window.lenis) window.lenis.scrollTo(0)
+  else window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
 
@@ -33,10 +39,17 @@ export function Navbar() {
       <div className="mx-auto flex max-w-content items-center justify-between px-3 py-3 md:px-8">
         <a
           href="#top"
-          className="rounded-sm transition-opacity duration-200 ease-out hover:opacity-80"
+          onClick={scrollToTop}
+          className="shrink-0 rounded-sm"
           aria-label="Grand Rivals — home"
         >
-          <Wordmark />
+          <img
+            src="/logo-horizontal.png"
+            alt="Grand Rivals"
+            width={179}
+            height={36}
+            className="h-[36px] w-auto max-w-none shrink-0"
+          />
         </a>
 
         <div className="flex items-center gap-3">
