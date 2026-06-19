@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { cancelFrame, frame } from 'framer-motion'
 import Lenis from 'lenis'
 
 /**
@@ -17,16 +18,20 @@ export function useLenis(enabled = true) {
     // Expose the instance for anchor-link scrolling and tooling.
     window.lenis = lenis
 
-    let frame
-    const raf = (time) => {
-      lenis.raf(time)
-      frame = requestAnimationFrame(raf)
+    // Tick Lenis from Framer Motion's single render loop rather than a second,
+    // independent requestAnimationFrame. Two competing RAF loops both touching
+    // scroll is what causes the double-firing and jank — this unifies them so
+    // Lenis advances first, then Framer reads the resulting scroll in the same
+    // frame.
+    const update = (data) => {
+      lenis.raf(data.timestamp)
     }
-    frame = requestAnimationFrame(raf)
+    frame.update(update, true)
 
     return () => {
-      cancelAnimationFrame(frame)
+      cancelFrame(update)
       lenis.destroy()
+      delete window.lenis
     }
   }, [enabled])
 }

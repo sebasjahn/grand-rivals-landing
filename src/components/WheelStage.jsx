@@ -10,6 +10,7 @@ import {
 import { SignatureWheel } from './SignatureWheel'
 import { SmokePlume } from './SmokePlume'
 import { useReducedMotion } from '../lib/useReducedMotion'
+import { useIsMobile } from '../lib/useIsMobile'
 import textureCarbon from '../../assets/texture-carbon.svg'
 
 const SHARP = [0.16, 1, 0.3, 1]
@@ -42,6 +43,10 @@ const SMOKE_POSE = {
 
 export function WheelStage() {
   const reduced = useReducedMotion()
+  const isMobile = useIsMobile()
+  // Under 768px the wheel is a static hero backdrop only — no scroll/pointer
+  // motion at all. Reduced-motion users get the same treatment.
+  const motionOff = reduced || isMobile
   const { scrollY } = useScroll()
 
   // Track viewport size so poses can be expressed in vw/vh.
@@ -60,13 +65,14 @@ export function WheelStage() {
   const stops = POSE_STOPS
 
   // Scroll-tethered spoke rotation (degrees per pixel) — never time-based.
-  const scrollRotate = useTransform(scrollY, (v) => v * 0.12)
+  // Dialed back from 0.12 so desktop reads as a subtle drift, not an aggressive spin.
+  const scrollRotate = useTransform(scrollY, (v) => v * 0.07)
   const zero = useMotionValue(0)
 
   // Velocity → motion-blur fan + smoke life, spring-settled so it snaps back sharp.
   const velocity = useVelocity(scrollY)
   const absV = useTransform(velocity, (v) => Math.min(Math.abs(v), 2600))
-  const spread = useSpring(useTransform(absV, [0, 2600], [0, 7]), {
+  const spread = useSpring(useTransform(absV, [0, 2600], [0, 4]), {
     stiffness: 160,
     damping: 22,
     mass: 0.3,
@@ -86,16 +92,17 @@ export function WheelStage() {
   const smokeY = useTransform(sectionF, stops, SMOKE_POSE.y.map((n) => (n / 100) * vp.h))
   const smokeOpacity = useTransform(sectionF, stops, SMOKE_POSE.opacity)
 
-  // Pointer parallax for depth — layers move by different amounts.
+  // Pointer parallax for depth — layers move by different amounts. Distances
+  // dialed back so the depth is felt, not distracting.
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
-  const wheelMx = useSpring(useTransform(mx, [-1, 1], [-18, 18]), { stiffness: 80, damping: 20 })
-  const wheelMy = useSpring(useTransform(my, [-1, 1], [-12, 12]), { stiffness: 80, damping: 20 })
-  const smokeMx = useSpring(useTransform(mx, [-1, 1], [-34, 34]), { stiffness: 60, damping: 22 })
-  const smokeMy = useSpring(useTransform(my, [-1, 1], [-22, 22]), { stiffness: 60, damping: 22 })
+  const wheelMx = useSpring(useTransform(mx, [-1, 1], [-10, 10]), { stiffness: 80, damping: 20 })
+  const wheelMy = useSpring(useTransform(my, [-1, 1], [-7, 7]), { stiffness: 80, damping: 20 })
+  const smokeMx = useSpring(useTransform(mx, [-1, 1], [-20, 20]), { stiffness: 60, damping: 22 })
+  const smokeMy = useSpring(useTransform(my, [-1, 1], [-13, 13]), { stiffness: 60, damping: 22 })
 
   useEffect(() => {
-    if (reduced) return
+    if (motionOff) return
     if (!window.matchMedia('(hover: hover)').matches) return
     const onMove = (e) => {
       mx.set((e.clientX / window.innerWidth) * 2 - 1)
@@ -103,17 +110,24 @@ export function WheelStage() {
     }
     window.addEventListener('pointermove', onMove)
     return () => window.removeEventListener('pointermove', onMove)
-  }, [reduced, mx, my])
+  }, [motionOff, mx, my])
 
-  const rotate = reduced ? zero : scrollRotate
-  const fan = reduced ? zero : spread
-  const wheelPose = reduced
+  const rotate = motionOff ? zero : scrollRotate
+  const fan = motionOff ? zero : spread
+  const wheelPose = motionOff
     ? undefined
     : { x: wheelX, y: wheelY, scale: wheelScale, opacity: wheelOpacity }
-  const smokePose = reduced ? undefined : { x: smokeX, y: smokeY, opacity: smokeOpacity }
+  const smokePose = motionOff ? undefined : { x: smokeX, y: smokeY, opacity: smokeOpacity }
+
+  // On mobile the stage is anchored to the hero (one viewport tall, absolutely
+  // positioned) so it scrolls away with the section instead of staying fixed and
+  // dragging behind every subsequent section. On desktop it's the fixed spine.
+  const containerClass = isMobile
+    ? 'pointer-events-none absolute inset-x-0 top-0 z-0 h-screen overflow-hidden'
+    : 'pointer-events-none fixed inset-0 z-0 overflow-hidden'
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+    <div className={containerClass} aria-hidden="true">
       {/* base vertical near-black gradient — the one permitted dark-to-darker */}
       <div
         className="absolute inset-0"
@@ -143,7 +157,7 @@ export function WheelStage() {
           <motion.div className="h-full w-full" style={smokePose}>
             <motion.div
               className="h-full w-full"
-              style={reduced ? undefined : { x: smokeMx, y: smokeMy, opacity: smokeLife }}
+              style={motionOff ? undefined : { x: smokeMx, y: smokeMy, opacity: smokeLife }}
             >
               <SmokePlume className="h-full w-full" seed={8} style={{ mixBlendMode: 'screen' }} />
             </motion.div>
@@ -151,13 +165,16 @@ export function WheelStage() {
         </motion.div>
       </div>
 
-      {/* the wheel — center-right, bleeding off the edge, behind content */}
+      {/* the wheel — center-right, bleeding off the edge, behind content.
+          will-change promotes it to its own GPU layer so transforms composite
+          cheaply instead of repainting. */}
       <div
         className="absolute top-1/2 opacity-[0.5] sm:opacity-[0.7] lg:opacity-[0.8]"
         style={{
           right: 'clamp(-220px, -8vw, -80px)',
           width: 'clamp(440px, 58vw, 980px)',
           transform: 'translateY(-50%)',
+          willChange: 'transform',
         }}
       >
         <motion.div
